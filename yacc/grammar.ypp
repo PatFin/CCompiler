@@ -1,0 +1,585 @@
+%{
+#define YYDEBUG 1
+#include <iostream>
+#include <string>
+#include <list>
+#include <FlexLexer.h>
+using namespace std;
+#include "AssignBinaryExpression.h"
+#include "NoAssignBinaryExpression.h"
+#include "ArrayDeclaration.h"
+#include "VariableDeclaration.h"
+#include "DeclarationInstruction.h"
+#include "Variable.h"
+#include "Array.h"
+#include "ExpressionInstruction.h"
+#include "ForInstruction.h"
+#include "Function.h"
+#include "IfInstruction.h"
+#include "InstructionBlock.h"
+#include "ListExpression.h"
+#include "Operators.h"
+#include "ParameterDeclaration.h"
+#include "Program.h"
+#include "ReturnInstruction.h"
+#include "Types.h"
+#include "AssignUnaryExpression.h"
+#include "NoAssignUnaryExpression.h"
+#include "Value.h"
+#include "WhileInstruction.h"
+#include "Location.h"
+#include "CharValue.h"
+#include "Int64Value.h"
+#include "FunctionEvaluation.h"
+#include "Name.h"
+#include "grammar.tab.h"
+using namespace Model;
+// initializing the lexer
+yyFlexLexer lexer;
+#undef yylex
+#define yylex lexer.yylex
+extern void yyerror( Model::Program * p, const char *);
+YYLTYPE yylloc;
+bool noSyntaxError;
+%}
+%define parse.error verbose
+%union {
+    int intVal;
+    char charVal;
+    std::string * stringVal;
+    Model::Function * function;
+    std::list<Model::ParameterDeclaration*> * paramDecl;
+    std::list<Model::Instruction*> * instructions;
+    Model::Instruction * instruction;
+    Model::InstructionBlock * iBlock;
+    list<Model::Declaration*> * declarations;
+    Model::Declaration * declaration;
+    Model::ArrayDeclaration * arrayDeclaration;
+    Model::VariableDeclaration * variableDeclaration;
+    Model::Expression * expression;
+    Model::ListExpression * listExpressions;
+    list<Model::Expression*> * expressions;
+    Model::Value * value;
+    Model::Types * types;
+    Model::LValue * lValue;
+    Model::DeclarationInstruction * declarationInstruction;
+    Model::Program * program;
+    Util::Name * name;
+}
+%token INCREMENT DECREMENT BIT_LEFT_SHIFT_ASSIGN BIT_RIGHT_SHIFT_ASSIGN BIT_AND_ASSIGN BIT_OR_ASSIGN BIT_XOR_ASSIGN PLUS_ASSIGN MINUS_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN TEST_EQUAL TEST_INFEQUAL TEST_SUPEQUAL TEST_DIFFERENT OR AND BIT_LEFT_SHIFT BIT_RIGHT_SHIFT BIT_NOT BIT_AND BIT_OR XOR NOT TEST_SUP TEST_INF PLUS MINUS MUL DIV MODULUS ASSIGN OPEN_BRACKETS CLOSE_BRACKETS OPEN_PARENTHESES CLOSE_PARENTHESES OPEN_BRACES CLOSE_BRACES SEMICOLON COMA IF ELSE WHILE FOR VOID CHAR INT32 INT64 RETURN ERROR_NOT_ALLOWED
+%parse-param { Model::Program * prog }
+%token <intVal> INTEGER
+%token <charVal> CHARVAL
+%token <stringVal> IDENTIFICATOR
+%type <program> PROGRAM
+%type <function> FUNCTION
+%type <paramDecl> PARAMETERS
+%type <paramDecl> PARAMETERS_DECLARATION
+%type <instructions> INSTRUCTIONS
+%type <instruction> INSTRUCTION
+%type <declarationInstruction> INSTRUCTION_DECLARATION
+%type <instruction> INSTRUCTION_IF
+%type <instruction> INSTRUCTION_ELSE
+%type <instruction> INSTRUCTION_WHILE
+%type <instruction> INSTRUCTION_FOR
+%type <instruction> INSTRUCTION_RETURN
+%type <instruction> INSTRUCTION_EXPRESSION
+%type <iBlock> INSTRUCTION_BLOC
+%type <declarations> DECLARATIONS
+%type <declaration> DECLARATION
+%type <arrayDeclaration> ARRAY_DECLARATION
+%type <variableDeclaration> VARIABLE_DECLARATION
+%type <expression> INITIALISATION
+%type <expressions> ARRAY_INITIALISATION
+%type <expression> EXPRESSION
+%type <expression> EXPRESSIONOPT
+%type <expression> INSTRUCTION_RETURNB
+%type <expressions> EXPRESSION_LIST_OPT
+%type <expressions> EXPRESSION_LIST
+%type <types> TYPE
+%type <value> VALUE
+%type <name> NAME
+%type <lValue> LVALUE
+%left COMA
+%right ASSIGN PLUS_ASSIGN MINUS_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN BIT_LEFT_SHIFT_ASSIGN BIT_RIGHT_SHIFT_ASSIGN BIT_AND_ASSIGN BIT_XOR_ASSIGN BIT_OR_ASSIGN
+%left OR
+%left AND
+%left BIT_OR
+%left XOR
+%left BIT_AND
+%left TEST_EQUAL TEST_DIFFERENT
+%left TEST_INF TEST_SUP TEST_INFEQUAL TEST_SUPEQUAL
+%left BIT_LEFT_SHIFT BIT_RIGHT_SHIFT
+%left PLUS MINUS
+%left MUL DIV MODULUS
+%right BIT_NOT NOT INCREMENT DECREMENT
+%left OPEN_BRACKETS OPEN_PARENTHESES
+%%
+PROGRAM : PROGRAM FUNCTION                              {
+															prog->addFunction($2);
+														}
+         | PROGRAM INSTRUCTION_DECLARATION SEMICOLON    {
+															prog->addGlobalDeclaration($2);
+														}
+         |                                              {
+                                                            /* no action */
+														}
+         ;
+NAME :
+	IDENTIFICATOR                                	    {
+															$$ = new Util::Name($1,yylloc.linenumber);
+														}
+	;
+FUNCTION :
+	TYPE NAME PARAMETERS INSTRUCTION_BLOC    	    {
+																$$ = new Model::Function($1,$2->name,$3,$4,$2->line);
+                                                                delete $2;
+															}
+    ;
+PARAMETERS:
+	OPEN_PARENTHESES PARAMETERS_DECLARATION CLOSE_PARENTHESES   {
+																	$$ = $2 ;
+																}
+    | OPEN_PARENTHESES VOID CLOSE_PARENTHESES                   {
+                                                                    //Create an empty list of parameters
+																	$$ = new list<Model::ParameterDeclaration*>();
+																}
+    ;
+PARAMETERS_DECLARATION:
+	  PARAMETERS_DECLARATION COMA TYPE NAME            {
+																	$$ = $1;
+																	$$->push_back(new Model::ParameterDeclaration($3,$4->name,$4->line));
+                                                                    delete $4;
+																}
+	| TYPE NAME                                        {
+																	$$ = new list<Model::ParameterDeclaration*>();
+																	$$->push_back(new Model::ParameterDeclaration($1,$2->name,$2->line));
+                                                                    delete $2;
+																}
+    ;
+INSTRUCTIONS:
+	INSTRUCTIONS INSTRUCTION                        {
+														$$ = $1;
+														$$->push_back($2);
+													}
+	|                                               {
+														$$ = new list<Model::Instruction*>();
+													}
+    ;
+INSTRUCTION:
+	INSTRUCTION_DECLARATION SEMICOLON   	{
+												$$ = $1;
+											}
+    | INSTRUCTION_EXPRESSION SEMICOLON    	{
+												$$ = $1;
+											}
+    | INSTRUCTION_IF           				{
+												$$ = $1;
+											}
+    | INSTRUCTION_WHILE         			{
+												$$ = $1;
+											}
+    | INSTRUCTION_FOR           			{
+												$$ = $1;
+											}
+    | INSTRUCTION_BLOC          			{
+												$$ = $1;
+											}
+    | INSTRUCTION_RETURN SEMICOLON      	{
+												$$ = $1;
+											}
+    | SEMICOLON                    			{
+										    $$ = new Model::ExpressionInstruction(new Model::Expression(yylloc.linenumber));
+											}
+	;
+INSTRUCTION_DECLARATION:
+	TYPE DECLARATIONS           			{
+												$$ = new Model::DeclarationInstruction($1,$2);
+											}
+	;
+DECLARATIONS:
+	  DECLARATIONS COMA DECLARATION   		{
+												$$ = $1;
+												$$->push_back($3);
+											}
+	| DECLARATION 							{
+												$$ = new list<Model::Declaration*>();
+												$$->push_back($1);
+											}
+	;
+
+DECLARATION:
+  ARRAY_DECLARATION   {
+                        $$ = $1;
+                      }
+  | VARIABLE_DECLARATION  {
+                            $$ = $1;
+                          }
+;
+
+ARRAY_DECLARATION:
+  NAME OPEN_BRACKETS VALUE CLOSE_BRACKETS ARRAY_INITIALISATION 	{
+                      $$ = new Model::ArrayDeclaration($1->name,$3,$5,$1->line);
+                                              delete $1;
+                    }
+  ;
+
+VARIABLE_DECLARATION:
+	NAME INITIALISATION 	{
+												$$ = new Model::VariableDeclaration($1->name,$2,$1->line);
+                                                delete $1;
+											}
+    ;
+
+INITIALISATION :
+	ASSIGN EXPRESSION  						{
+												$$ = $2;
+											}
+    |               						{
+												$$ = new Model::Expression(yylloc.linenumber);
+											}
+    ;
+
+ARRAY_INITIALISATION:
+  ASSIGN OPEN_BRACES EXPRESSION_LIST CLOSE_BRACES
+                      {
+                        $$ = $3;
+                      }
+|                     {
+                        $$ = new list<Model::Expression*>();
+                      }
+
+;
+INSTRUCTION_IF:
+	IF OPEN_PARENTHESES EXPRESSION CLOSE_PARENTHESES INSTRUCTION INSTRUCTION_ELSE
+											{
+												$$ = new Model::IfInstruction($3,$5,$6);
+											}
+    ;
+INSTRUCTION_ELSE:
+	ELSE INSTRUCTION						{
+												$$ = $2;
+											}
+    |                   					{
+                                                // Empty instruction
+												$$ = new Model::ExpressionInstruction(new Model::Expression(yylloc.linenumber));
+											}
+	;
+INSTRUCTION_WHILE:
+	WHILE OPEN_PARENTHESES EXPRESSION CLOSE_PARENTHESES INSTRUCTION
+											{
+												$$ = new Model::WhileInstruction($3,$5);
+											}
+    ;
+INSTRUCTION_FOR:
+	FOR OPEN_PARENTHESES EXPRESSIONOPT SEMICOLON EXPRESSIONOPT SEMICOLON EXPRESSIONOPT CLOSE_PARENTHESES INSTRUCTION
+											{
+												$$ = new Model::ForInstruction($3,$5,$7,$9,yylloc.linenumber); //TODO put the correct line number
+											}
+    ;
+INSTRUCTION_BLOC:
+	OPEN_BRACES INSTRUCTIONS CLOSE_BRACES	{
+												$$ = new Model::InstructionBlock($2,yylloc.linenumber);
+											}
+    ;
+INSTRUCTION_RETURN:
+	RETURN INSTRUCTION_RETURNB				{
+												$$ = new Model::ReturnInstruction($2);
+											}
+    ;
+INSTRUCTION_RETURNB:
+	EXPRESSION 								{
+												$$ = $1;
+											}
+	|										{
+												$$ = new Expression(yylloc.linenumber);
+											}
+    ;
+INSTRUCTION_EXPRESSION:
+	EXPRESSION 								{
+												$$ = new Model::ExpressionInstruction($1);
+											}
+    | EXPRESSION_LIST_OPT
+                                            {
+                                                $$ = new Model::ExpressionInstruction(new Model::ListExpression($1));
+                                            }
+    ;
+EXPRESSIONOPT:
+	EXPRESSION
+											{
+												$$ = $1;
+											}
+    | EXPRESSION_LIST_OPT
+                                            {
+                                                $$ = new Model::ListExpression($1);
+                                            }
+	|
+											{
+												$$ = new Model::Expression(yylloc.linenumber);
+											}
+    ;
+EXPRESSION:
+	VALUE
+											{
+												$$ = $1;
+											}
+    | LVALUE
+											{
+												$$ = $1;
+											}
+    | NAME OPEN_PARENTHESES EXPRESSION_LIST_OPT CLOSE_PARENTHESES
+											{
+												$$ = new Model::FunctionEvaluation($1->name,$3,$1->line);
+                                                delete $1;
+											}
+	| LVALUE BIT_LEFT_SHIFT_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,BIT_LEFT_SHIFT_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE BIT_RIGHT_SHIFT_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,BIT_RIGHT_SHIFT_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE BIT_AND_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,BIT_AND_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE BIT_OR_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,BIT_OR_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE BIT_XOR_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,BIT_XOR_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE PLUS_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,PLUS_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE MINUS_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,MINUS_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE MUL_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,MUL_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE DIV_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,DIV_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE MOD_ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,MOD_ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_EQUAL EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_EQUAL_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_INFEQUAL EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_INFEQUAL_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_SUPEQUAL EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_SUPEQUAL_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_DIFFERENT EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_DIFFERENT_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION OR EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,OR_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION AND EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,AND_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION BIT_LEFT_SHIFT EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,BIT_LEFT_SHIFT_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION BIT_RIGHT_SHIFT EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,BIT_RIGHT_SHIFT_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION BIT_AND EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,BIT_AND_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION BIT_OR EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,BIT_OR_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION XOR EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,XOR_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_SUP EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_SUP_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION TEST_INF EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,TEST_INF_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION PLUS EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,PLUS_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION MINUS EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,MINUS_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION MUL EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,MUL_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION DIV EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,DIV_OPERATOR,$3,yylloc.linenumber);
+											}
+	| EXPRESSION MODULUS EXPRESSION
+											{
+												$$ = new Model::NoAssignBinaryExpression($1,MODULUS_OPERATOR,$3,yylloc.linenumber);
+											}
+	| LVALUE ASSIGN EXPRESSION
+											{
+												$$ = new Model::AssignBinaryExpression($1,ASSIGN_OPERATOR,$3,yylloc.linenumber);
+											}
+	| INCREMENT LVALUE
+											{
+												$$ = new Model::AssignUnaryExpression(PRE_INCREMENT_OPERATOR,$2,yylloc.linenumber);
+											}
+	| DECREMENT LVALUE
+											{
+												$$ = new Model::AssignUnaryExpression(PRE_DECREMENT_OPERATOR,$2,yylloc.linenumber);
+											}
+	| PLUS EXPRESSION
+											{
+												$$ = new Model::NoAssignUnaryExpression(UNARY_PLUS_OPERATOR,$2,yylloc.linenumber);
+											}
+	| MINUS EXPRESSION
+											{
+												$$ = new Model::NoAssignUnaryExpression(UNARY_MINUS_OPERATOR,$2,yylloc.linenumber);
+											}
+	| BIT_NOT EXPRESSION
+											{
+												$$ = new Model::NoAssignUnaryExpression(BIT_NOT_OPERATOR,$2,yylloc.linenumber);
+											}
+	| NOT EXPRESSION
+											{
+												$$ = new Model::NoAssignUnaryExpression(NOT_OPERATOR,$2,yylloc.linenumber);
+											}
+	| LVALUE INCREMENT
+											{
+												$$ = new Model::AssignUnaryExpression(POST_INCREMENT_OPERATOR, $1, yylloc.linenumber);
+											}
+	| LVALUE DECREMENT
+											{
+												$$ = new Model::AssignUnaryExpression(POST_DECREMENT_OPERATOR, $1, yylloc.linenumber);
+											}
+    | OPEN_PARENTHESES EXPRESSION CLOSE_PARENTHESES
+											{
+												$$ = $2;
+											}
+    ;
+LVALUE:
+	IDENTIFICATOR
+											{
+												$$ = new Model::Variable($1,yylloc.linenumber);
+											}
+	|	IDENTIFICATOR OPEN_BRACKETS EXPRESSION CLOSE_BRACKETS
+											{
+												$$ = new Model::Array($1,$3,yylloc.linenumber);
+											}
+	;
+EXPRESSION_LIST_OPT:
+	EXPRESSION_LIST
+											{
+												//$$ = new Model::ListExpression($1);
+                        $$ = $1;
+											}
+	|										{
+												//$$ = new Model::ListExpression(new list<Model::Expression*>());
+                        $$ = new list<Model::Expression*>();
+											}
+	;
+EXPRESSION_LIST:
+	EXPRESSION_LIST COMA EXPRESSION
+											{
+												$$ = $1;
+												$$->push_back($3);
+											}
+	| EXPRESSION
+											{
+												$$ = new list<Model::Expression*>();
+												$$->push_back($1);
+											}
+	;
+TYPE:
+	CHAR
+											{
+												$$ = new Model::Types(Model::CHAR);
+											}
+    | INT32
+											{
+												$$ = new Model::Types(Model::INT32);
+											}
+    | INT64
+											{
+												$$ = new Model::Types(Model::INT64);
+											}
+    | VOID
+											{
+												$$ = new Model::Types(Model::VOID);
+											}
+    ;
+VALUE:
+	CHARVAL
+											{
+												$$ = new Model::CharValue($1,yylloc.linenumber);
+											}
+    | INTEGER
+											{
+												$$ = new Model::Int64Value($1,yylloc.linenumber);
+											}
+    ;
+%%
+void yyerror(Model::Program * p, const char * msg)
+{
+    cerr << msg << " at line " << yylloc.linenumber << endl;
+    noSyntaxError = false;
+}
+
+void TestLexer ()
+{
+    //yydebug = 1;
+    Model::Program * prog = new Program();
+
+    yyparse(prog);
+    bool correctProgram = (*prog).verifyProgram();
+
+    if(correctProgram){
+		cout << "Programme correct" << endl;
+    }
+    else{
+		cout << "Programme incorrect" << endl;
+    }
+    delete prog;
+}
+
+bool getProgram(Model::Program** returnedProgram) {
+
+    noSyntaxError = true;
+    /** If there is an error while parsing, noSyntaxError will be set to false
+     *  in the TestLexer method
+     */
+
+    Model::Program * prog = new Program();
+    yyparse(prog);
+    *returnedProgram = prog;
+
+    return noSyntaxError;
+}

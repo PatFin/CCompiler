@@ -1,0 +1,118 @@
+%{
+#include <iostream>
+
+using namespace std;
+
+#include "Location.h"
+
+
+#include "BinaryExpression.h"
+#include "Declaration.h"
+#include "VariableDeclaration.h"
+#include "ArrayDeclaration.h"
+#include "DeclarationInstruction.h"
+#include "Variable.h"
+#include "Expression.h"
+#include "ExpressionInstruction.h"
+#include "ForInstruction.h"
+#include "Function.h"
+#include "IfInstruction.h"
+#include "Instruction.h"
+#include "InstructionBlock.h"
+#include "ListExpression.h"
+#include "Operators.h"
+#include "ParameterDeclaration.h"
+#include "Program.h"
+#include "ReturnInstruction.h"
+#include "Types.h"
+#include "UnaryExpression.h"
+#include "Value.h"
+#include "WhileInstruction.h"
+#include "Name.h"
+
+#include "grammar.tab.h"
+
+extern YYLTYPE yylloc;
+
+%}
+%option c++
+%option noyywrap
+%option yylineno
+
+multicomment "/*"( [^*] | (\*+[^*/]) )*\*+\/
+preprocess #.*"\n"
+
+integer [0-9]+
+charval "'"[\\]?."'"
+comment "//".*\n
+
+identificator [A-Za-z][A-Za-z0-9]*
+%x MULTILINE_COMMENT
+%%
+
+"/*"            { BEGIN(MULTILINE_COMMENT); }
+<MULTILINE_COMMENT>"*/" { BEGIN(INITIAL); }
+<MULTILINE_COMMENT>\n   { }
+<MULTILINE_COMMENT>.    { }
+
+
+[ \t]     			{ /* ignore */ }
+{preprocess}		{ /* ignore */ }
+{comment}			{ /* ignore */ }
+"\n"    		    { /* ignore */ }
+"\r"    		    { /* ignore */ }
+{integer}		    { yylloc.linenumber = yylineno; yylval.intVal = atoi(yytext); return INTEGER; }
+{charval}			{ yylloc.linenumber = yylineno; yylval.charVal = yytext[1]; return CHARVAL; }
+"++"				{ yylloc.linenumber = yylineno; return INCREMENT; }
+"--"				{ yylloc.linenumber = yylineno; return DECREMENT; }
+"<<="				{ yylloc.linenumber = yylineno; return BIT_LEFT_SHIFT_ASSIGN; }
+">>="				{ yylloc.linenumber = yylineno; return BIT_RIGHT_SHIFT_ASSIGN; }
+"&="				{ yylloc.linenumber = yylineno; return BIT_AND_ASSIGN; }
+"|="				{ yylloc.linenumber = yylineno; return BIT_OR_ASSIGN; }
+"^="				{ yylloc.linenumber = yylineno; return BIT_XOR_ASSIGN; }
+"+="				{ yylloc.linenumber = yylineno; return PLUS_ASSIGN; }
+"-="				{ yylloc.linenumber = yylineno; return MINUS_ASSIGN; }
+"*="				{ yylloc.linenumber = yylineno; return MUL_ASSIGN; }
+"/="				{ yylloc.linenumber = yylineno; return DIV_ASSIGN; }
+"%="				{ yylloc.linenumber = yylineno; return MOD_ASSIGN; }
+"=="				{ yylloc.linenumber = yylineno; return TEST_EQUAL; }
+"<="				{ yylloc.linenumber = yylineno; return TEST_INFEQUAL; }
+">="				{ yylloc.linenumber = yylineno; return TEST_SUPEQUAL; }
+"!="				{ yylloc.linenumber = yylineno; return TEST_DIFFERENT; }
+"||"				{ yylloc.linenumber = yylineno; return OR; }
+"&&"				{ yylloc.linenumber = yylineno; return AND; }
+"<<"				{ yylloc.linenumber = yylineno; return BIT_LEFT_SHIFT; }
+">>"				{ yylloc.linenumber = yylineno; return BIT_RIGHT_SHIFT; }
+"~"					{ yylloc.linenumber = yylineno; return BIT_NOT; }
+"&"					{ yylloc.linenumber = yylineno; return BIT_AND; }
+"|"					{ yylloc.linenumber = yylineno; return BIT_OR; }
+"^"					{ yylloc.linenumber = yylineno; return XOR; }
+"!"					{ yylloc.linenumber = yylineno; return NOT; }
+">"					{ yylloc.linenumber = yylineno; return TEST_SUP; }
+"<"					{ yylloc.linenumber = yylineno; return TEST_INF; }
+"+"     		    { yylloc.linenumber = yylineno; return PLUS; }
+"-"     		    { yylloc.linenumber = yylineno; return MINUS; }
+"*"     		    { yylloc.linenumber = yylineno; return MUL; }
+"/"		    	    { yylloc.linenumber = yylineno; return DIV; }
+"%"					{ yylloc.linenumber = yylineno; return MODULUS; }
+"="					{ yylloc.linenumber = yylineno; return ASSIGN; }
+"[" 	    	    { yylloc.linenumber = yylineno; return OPEN_BRACKETS; }
+"]" 	    	    { yylloc.linenumber = yylineno; return CLOSE_BRACKETS; }
+"("					{ yylloc.linenumber = yylineno; return OPEN_PARENTHESES; }
+")"					{ yylloc.linenumber = yylineno; return CLOSE_PARENTHESES; }
+"{"					{ yylloc.linenumber = yylineno; return OPEN_BRACES; }
+"}"					{ yylloc.linenumber = yylineno; return CLOSE_BRACES; }
+";"					{ yylloc.linenumber = yylineno; return SEMICOLON; }
+","					{ yylloc.linenumber = yylineno; return COMA; }
+"if"				{ yylloc.linenumber = yylineno; return IF; }
+"else"				{ yylloc.linenumber = yylineno; return ELSE; }
+"while"				{ yylloc.linenumber = yylineno; return WHILE; }
+"for"				{ yylloc.linenumber = yylineno; return FOR; }
+"void"				{ yylloc.linenumber = yylineno; return VOID; }
+"char"				{ yylloc.linenumber = yylineno; return CHAR; }
+"int32_t"			{ yylloc.linenumber = yylineno; return INT32; }
+"int64_t"			{ yylloc.linenumber = yylineno; return INT64; }
+"return"			{ yylloc.linenumber = yylineno; return RETURN; }
+{identificator}		{ yylloc.linenumber = yylineno; yylval.stringVal = new std::string(yytext) ; return IDENTIFICATOR; }
+.					{ yylloc.linenumber = yylineno; return ERROR_NOT_ALLOWED; }
+%%
