@@ -10,7 +10,9 @@ Authors
 - Florentin Mace-Roussel
 - Benoit Renault
 
-All (at the time of the project) 4th students at INSA Lyon - Computer Science and Information Technology department.
+All (at the time of the project i.e. April 2017) 4th students at INSA Lyon - Computer Science and Information Technology department.
+
+This project consists in a C subset compiler. We use **flex** and **bison** to produce an intermediary representation and then translate it to *intelx86* assembly. The result can then be linked using *gcc* before running the program.
 
 Building the program
 ==
@@ -19,9 +21,9 @@ The executable is located in the bin directory : __/bin/CCompiler.exe__
 
 You will find a simple explanation of how to use the program by symply running it without any argument or by using -v option.
 
-Run the unit tests
---
-You car run the unit tests by simply running the following command :
+Running the unit tests
+==
+You car run the unit tests by simply using the following command :
 `make runtest`
 
 The unit tests include the detection of several kinds of error and checking the associated error messages.
