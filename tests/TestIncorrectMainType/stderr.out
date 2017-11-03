@@ -1,0 +1,2 @@
+ERROR on line 1 : incorrect type for main function : int64_t instead of void.
+WARNING at line 1 : unused parameter c

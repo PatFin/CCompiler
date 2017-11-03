@@ -1,0 +1,39 @@
+void main ( void )
+{
+    int64_t a = 42;
+    if ( a == 36 )
+    {
+        int32_t B = 1500;
+        //La vie est belle
+    }
+    else
+    {
+        while ( a || a == 36 )
+        {
+            //Bloc ubisoft rachete sa maman
+        }
+    }
+
+    if ( a > 0 )
+    {
+
+    }
+    if ( a >= 42 )
+    {
+        char bouh = 'c';
+    }
+    if ( a <= 26 )
+    {
+
+    }
+    if ( ! a )
+    {
+
+    }
+    else if ( a == 0 && a > 0 )
+    {
+
+    }
+
+
+}

@@ -1,0 +1,3 @@
+ERROR : There is no main function in this program.
+WARNING at line 3 : unused parameter c
+WARNING at line 1 : unused global variable globalvalue

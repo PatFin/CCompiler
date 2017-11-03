@@ -1,0 +1,6 @@
+int64_t globalvalue = 5;
+
+int32_t testFunction(char c)
+{
+	return 1;
+}

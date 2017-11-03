@@ -1,0 +1,6 @@
+WARNING at line 23 : unused parameter c
+WARNING at line 23 : unused parameter i64
+WARNING at line 23 : unused parameter int32
+WARNING at line 29 : unused parameter i64
+WARNING at line 29 : unused parameter int32
+WARNING at line 36 : unused variable c

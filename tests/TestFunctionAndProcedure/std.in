@@ -1,0 +1,37 @@
+
+
+int64_t firsFunction ( void )
+{
+    return 42;
+}
+
+int32_t secondFunction ( void )
+{
+    return 42;
+}
+
+char thirdFunction ( void )
+{
+    return 'l';
+}
+
+void firstProcedure ( void )
+{
+
+}
+
+void secondProcedure ( char c, int64_t i64, int32_t int32 )
+{
+
+}
+
+
+char fourthFunction ( char c, int64_t i64, int32_t int32 )
+{
+    return c;
+}
+
+void main ( void )
+{
+  char c = fourthFunction ( 'c', 32 , 64 );
+}

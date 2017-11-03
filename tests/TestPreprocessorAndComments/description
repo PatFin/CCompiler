@@ -1,0 +1,1 @@
+Tests the parsing of a simple main program with preprocessor directives and comments that ought to be ignored by the parser.

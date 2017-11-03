@@ -1,0 +1,7 @@
+void main ( void )
+{
+    for ( int64_t i = 0 ; i < 36 ; i++ , c ++ )
+    {
+        i ++;
+    }
+}

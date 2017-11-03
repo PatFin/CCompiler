@@ -1,0 +1,26 @@
+void main ( void )
+{
+    while ( 1 )
+    {
+
+    }
+
+    for ( ; ; );
+
+    int64_t i;
+    for ( i = 0 ; i < 36 ; i++ )
+    {
+        i ++;
+    }
+
+    int32_t a,b;
+    for ( a = 6 , b = 2 ; a < 72 ; --b )
+    {
+
+    }
+    char c = '4';
+    for ( i = 0 ; i < 36 ; i++ , c ++ )
+    {
+        i ++;
+    }
+}

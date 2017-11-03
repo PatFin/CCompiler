@@ -1,0 +1,12 @@
+void main ( void )
+{
+    char arrayOfCharacters [7] ;
+
+    int32_t integers [10];
+
+    arrayOfCharacters [1] = 'i';
+
+    int32_t i = 0;
+    integers [i] = 41;
+    arrayOfCharacters [ integers [ i ] ] = '7';
+}

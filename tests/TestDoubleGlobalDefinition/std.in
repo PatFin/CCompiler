@@ -1,0 +1,10 @@
+
+int32_t theVariable;
+
+int32_t theVariable = 42;
+int32_t theVariable = 17;
+
+void main ( void )
+{
+
+}

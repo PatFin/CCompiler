@@ -1,0 +1,4 @@
+int64_t main (char c)
+{
+	return 1;
+}

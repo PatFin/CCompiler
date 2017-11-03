@@ -1,0 +1,13 @@
+WARNING at line 7 : unused global variable alejandroBercail
+WARNING at line 11 : unused global variable deux
+WARNING at line 1 : unused global variable globox
+WARNING at line 8 : unused global variable jeanBernardeauDiJeanbonnot
+WARNING at line 3 : unused global variable pirate
+WARNING at line 2 : unused global variable rayman
+WARNING at line 13 : unused global variable soleil
+WARNING at line 4 : unused global variable space
+WARNING at line 12 : unused global variable trois
+WARNING at line 10 : unused global variable un
+WARNING at line 6 : unused global variable unEntierAvecUnNomTREEEEESSSSSlongmaisAuTorise61686451
+ERROR on line 11 initialisation of variable deux with wrong type.
+ERROR on line 13 initialisation of variable soleil with wrong type.

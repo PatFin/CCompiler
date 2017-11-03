@@ -1,0 +1,18 @@
+#include <stdio.h>
+#anything is ignored
+
+// single line comment
+
+
+
+void main ( void )
+{
+    //Another comment inside a block
+    /*
+        write anything you want
+        */
+    /**
+     * This should work too !
+     *
+     */
+}

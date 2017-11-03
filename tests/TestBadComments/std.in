@@ -1,0 +1,9 @@
+
+// This comment works
+/* so does this one */
+/ But not this one
+
+void main ( void )
+{
+
+}

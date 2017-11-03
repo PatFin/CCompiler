@@ -1,0 +1,1 @@
+Tests the error generated when trying to declare the iteration variable of a for loop in the for instruction
